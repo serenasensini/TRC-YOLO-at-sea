@@ -1,0 +1,38 @@
+apiVersion: v1
+data:
+  COMMON_CACHE_TTL_MS: "300000"
+  CRON_REC_REFRESH_CONCURRENCY: "1"
+  CRON_REC_REFRESH_MAX_PER_CLUSTER: "10"
+  CRON_REC_REFRESH_MAX_USERS_FOR_RECENT_CHANGES: "50"
+  CRON_REC_REFRESH_MAX_USERS_FOR_STALE: "30"
+  CRON_REC_REFRESH_MAX_USERS_PROFILE_SYNC: "20"
+  CRON_REC_REFRESH_MAX_USERS_WITHOUT_RECOMMENDATIONS: "20"
+  CRON_REC_REFRESH_STALE_DAYS: "30"
+  CRON_SUMMARY_REFRESH_CONCURRENCY: "1"
+  CRON_SUMMARY_REFRESH_MAX_USERS: "1"
+  CRON_SUMMARY_REFRESH_TEST_MODE: "true"
+  DASHBOARD_URL: https://dashboard-test.welyk.tech
+  LOGS_ENABLED: "0"
+  NODE_ENV: test
+  PORT: "3008"
+  RATE_LIMIT_MAX: "30"
+  RATE_LIMIT_WINDOW: 10m
+  RECOMMENDATIONS_DEBOUNCE_MS: "60000"
+  SWAGGER_HOST: https://platform-api-test.welyk.tech
+kind: ConfigMap
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"CRON_REC_REFRESH_CONCURRENCY":"1","CRON_REC_REFRESH_MAX_PER_CLUSTER":"10","CRON_REC_REFRESH_MAX_USERS_FOR_RECENT_CHANGES":"50","CRON_REC_REFRESH_MAX_USERS_FOR_STALE":"30","CRON_REC_REFRESH_MAX_USERS_WITHOUT_RECOMMENDATIONS":"20","CRON_REC_REFRESH_STALE_DAYS":"30","CRON_SUMMARY_REFRESH_CONCURRENCY":"1","CRON_SUMMARY_REFRESH_MAX_USERS":"1","CRON_SUMMARY_REFRESH_TEST_MODE":"true","DASHBOARD_URL":"https://dashboard-test.welyk.tech","LOGS_ENABLED":"0","NODE_ENV":"development","PORT":"3008","SWAGGER_HOST":"platform-api-test.welyk.tech"},"kind":"ConfigMap","metadata":{"annotations":{"meta.helm.sh/release-name":"career-platform-api","meta.helm.sh/release-namespace":"welyk-test"},"labels":{"app.kubernetes.io/component":"api","app.kubernetes.io/instance":"career-platform-api","app.kubernetes.io/managed-by":"Helm","app.kubernetes.io/name":"career-platform-api","app.kubernetes.io/part-of":"nexus","app.kubernetes.io/version":"alpha-0.1.0","helm.sh/chart":"career-platform-api-1.0.0"},"name":"career-platform-api-config","namespace":"welyk-test"}}
+    meta.helm.sh/release-name: career-platform-api
+    meta.helm.sh/release-namespace: welyk-test
+  labels:
+    app.kubernetes.io/component: api
+    app.kubernetes.io/instance: career-platform-api
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: career-platform-api
+    app.kubernetes.io/part-of: nexus
+    app.kubernetes.io/version: alpha-0.1.0
+    helm.sh/chart: career-platform-api-1.0.0
+  name: career-platform-api-config
+  namespace: welyk-test

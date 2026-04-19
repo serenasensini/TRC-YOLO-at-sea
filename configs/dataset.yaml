@@ -1,0 +1,15 @@
+# YOLO at Sea — Dataset configuration for Ultralytics YOLOv11
+# Paths are relative to this file's parent directory
+path: ../dataset
+train: images/train
+val: images/val
+
+# Classes
+names:
+  0: Ship
+  1: Wreck
+  2: Sea
+
+# Number of classes
+nc: 3
+

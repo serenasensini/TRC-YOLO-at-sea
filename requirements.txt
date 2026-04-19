@@ -1,0 +1,21 @@
+# YOLO at Sea - Ship & Wreck Detection
+# Core
+ultralytics>=8.3
+opencv-python>=4.8
+numpy>=1.24
+Pillow>=10.0
+pyyaml>=6.0
+tqdm>=4.65
+requests>=2.31
+
+# Dataset
+kaggle>=1.6
+
+# Auto-annotation (Grounding DINO + SAM2)
+autodistill>=0.1
+autodistill-grounded-sam-2>=0.1
+supervision>=0.21
+
+# Utilities
+matplotlib>=3.7
+
