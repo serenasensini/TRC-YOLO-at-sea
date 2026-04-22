@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
 Step 4 — Preparazione dataset per YOLOv11
-Unisce immagini (Kaggle + satellitari) con le label auto-generate,
+Unisce immagini satellitari con le label (wreck detection, classe unica),
 esegue split train/val 80/20 e applica data augmentation base.
+
+Classe unica: 0=wreck
 """
 
-import os
 import random
 import shutil
 from pathlib import Path
@@ -17,7 +18,6 @@ from tqdm import tqdm
 
 # ---------- CONFIG ----------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-KAGGLE_DIR = PROJECT_ROOT / "dataset" / "kaggle_raw"
 SATELLITE_DIR = PROJECT_ROOT / "dataset" / "satellite_raw"
 LABEL_DIR = PROJECT_ROOT / "dataset" / "labels_auto"
 LABEL_STUDIO_DIR = PROJECT_ROOT / "dataset" / "labels_studio"  # Label Studio YOLO export
@@ -30,9 +30,66 @@ LABELS_VAL = PROJECT_ROOT / "dataset" / "labels" / "val"
 TRAIN_RATIO = 0.8
 RANDOM_SEED = 42
 TARGET_SIZE = 640  # Resize images to 640x640 for YOLO
-ENABLE_AUGMENTATION = True
-BALANCE_CLASSES = True  # Oversample minority classes
+ENABLE_AUGMENTATION = False  # Disabilitato: YOLO ha già augmentation online, evita duplicazione
+# Only wreck class is kept (class 0 in both Label Studio and auto labels)
 # ----------------------------
+
+
+def _detect_label_source(label_path: Path) -> str:
+    """Detect which labeling scheme a file uses based on its location."""
+    path_str = str(label_path)
+    if "labels_studio" in path_str:
+        return "studio"  # classes.txt: Wreck=0 (polygon format)
+    return "auto"  # Current auto_annotate: wreck=0 (bbox format)
+
+
+def _polygon_to_bbox(coords: list[float]) -> tuple[float, float, float, float]:
+    """Convert polygon coordinates [x1,y1,x2,y2,...] to YOLO bbox [xc, yc, w, h]."""
+    xs = coords[0::2]
+    ys = coords[1::2]
+    x_min, x_max = min(xs), max(xs)
+    y_min, y_max = min(ys), max(ys)
+    xc = (x_min + x_max) / 2
+    yc = (y_min + y_max) / 2
+    w = x_max - x_min
+    h = y_max - y_min
+    return xc, yc, w, h
+
+
+def _filter_labels(label_lines: list[str], source: str = "auto") -> list[str]:
+    """
+    Keeps only wreck annotations and remaps to class 0.
+    Handles both bbox format (5 values) and polygon format (>5 values).
+
+    Source mappings:
+      - "studio": Label Studio export → Wreck=0 (polygon format, converted to bbox)
+      - "auto": auto_annotate.py → Wreck=0 (bbox format)
+    """
+    wreck_ids = {0}  # Both sources use class 0 for wreck
+
+    filtered = []
+    for l in label_lines:
+        if not l.strip():
+            continue
+        parts = l.strip().split()
+        if len(parts) < 5:
+            continue
+        try:
+            cls_id = int(parts[0])
+        except ValueError:
+            continue
+        if cls_id not in wreck_ids:
+            continue
+
+        coords = [float(p) for p in parts[1:]]
+        if len(coords) == 4:
+            # Already bbox format: xc yc w h
+            filtered.append(f"0 {' '.join(parts[1:])}")
+        elif len(coords) >= 6 and len(coords) % 2 == 0:
+            # Polygon format: x1 y1 x2 y2 ... → convert to bbox
+            xc, yc, w, h = _polygon_to_bbox(coords)
+            filtered.append(f"0 {xc:.6f} {yc:.6f} {w:.6f} {h:.6f}")
+    return filtered
 
 
 def _find_label_studio_file(stem: str) -> Optional[Path]:
@@ -55,90 +112,27 @@ def _find_label_studio_file(stem: str) -> Optional[Path]:
     return None
 
 
-def _get_dominant_class(label_path: Optional[Path]) -> Optional[int]:
-    """Restituisce la classe dominante (più frequente) in un file label."""
-    if label_path is None or not label_path.exists():
-        return None
-    lines = label_path.read_text().strip().split("\n")
-    classes = []
-    for line in lines:
-        parts = line.strip().split()
-        if len(parts) >= 1:
-            try:
-                classes.append(int(parts[0]))
-            except ValueError:
-                continue
-    if not classes:
-        return None
-    from collections import Counter
-    return Counter(classes).most_common(1)[0][0]
-
-
-def balance_pairs(pairs: list[tuple[Path, Optional[Path]]]) -> list[tuple[Path, Optional[Path]]]:
-    """
-    Oversampling delle classi minoritarie per bilanciare il dataset.
-    Raggruppa per classe dominante e replica le classi sotto-rappresentate.
-    """
-    from collections import Counter, defaultdict
-
-    class_groups: dict[Optional[int], list] = defaultdict(list)
-    for pair in pairs:
-        cls = _get_dominant_class(pair[1])
-        class_groups[cls].append(pair)
-
-    # Statistiche
-    print("\n📊  Class distribution (before balancing):")
-    for cls_id, group in sorted(class_groups.items(), key=lambda x: (x[0] is None, x[0])):
-        label = {0: "ship", 1: "wreck", 2: "sea"}.get(cls_id, "background/empty")
-        print(f"   Class {cls_id} ({label}): {len(group)} images")
-
-    # Trova la dimensione della classe più grande (escludendo background)
-    labeled_groups = {k: v for k, v in class_groups.items() if k is not None}
-    if not labeled_groups:
-        print("⚠️  No labeled images found, skipping balancing")
-        return pairs
-
-    max_count = max(len(v) for v in labeled_groups.values())
-
-    balanced = list(class_groups.get(None, []))  # Background images as-is
-    for cls_id, group in labeled_groups.items():
-        if len(group) < max_count:
-            # Oversample: ripeti ciclicamente fino a raggiungere max_count
-            oversampled = group.copy()
-            while len(oversampled) < max_count:
-                oversampled.extend(random.sample(group, min(len(group), max_count - len(oversampled))))
-            balanced.extend(oversampled)
-            label = {0: "ship", 1: "wreck", 2: "sea"}.get(cls_id, str(cls_id))
-            print(f"   ⬆️  Oversampled class {cls_id} ({label}): {len(group)} → {max_count}")
-        else:
-            balanced.extend(group)
-
-    print(f"   Total after balancing: {len(balanced)} (was {len(pairs)})")
-    return balanced
-
 
 def collect_image_label_pairs() -> list[tuple[Path, Optional[Path]]]:
     """Raccoglie coppie (immagine, label). Label può essere None se mancante."""
     extensions = (".jpg", ".jpeg", ".png", ".tif", ".bmp")
     pairs = []
 
-    for source_dir in [KAGGLE_DIR, SATELLITE_DIR]:
-        if not source_dir.exists():
+    if not SATELLITE_DIR.exists():
+        return pairs
+    for img_path in sorted(SATELLITE_DIR.rglob("*")):
+        if img_path.suffix.lower() not in extensions:
             continue
-        for img_path in sorted(source_dir.rglob("*")):
-            if img_path.suffix.lower() not in extensions:
-                continue
-            # Cerca label corrispondente (Label Studio ha priorità)
-            # Label Studio exports may be in a labels/ subdir with UUID prefixes
-            label_path_studio = _find_label_studio_file(img_path.stem)
-            label_path_auto = LABEL_DIR / f"{img_path.stem}.txt"
-            if label_path_studio is not None:
-                pairs.append((img_path, label_path_studio))
-            elif label_path_auto.exists():
-                pairs.append((img_path, label_path_auto))
-            else:
-                # Immagine senza label → immagine di background (utile per ridurre FP)
-                pairs.append((img_path, None))
+        # Cerca label corrispondente (Label Studio ha priorità)
+        label_path_studio = _find_label_studio_file(img_path.stem)
+        label_path_auto = LABEL_DIR / f"{img_path.stem}.txt"
+        if label_path_studio is not None:
+            pairs.append((img_path, label_path_studio))
+        elif label_path_auto.exists():
+            pairs.append((img_path, label_path_auto))
+        else:
+            # Immagine senza label → background (no wreck)
+            pairs.append((img_path, None))
 
     print(f"📁  Found {len(pairs)} image-label pairs")
     with_labels = sum(1 for _, l in pairs if l is not None)
@@ -264,9 +258,6 @@ def main():
         print("❌  Nessuna immagine trovata! Esegui prima gli step precedenti.")
         return
 
-    # Balance classes via oversampling
-    if BALANCE_CLASSES:
-        pairs = balance_pairs(pairs)
 
     # Shuffle and split
     random.shuffle(pairs)
@@ -287,7 +278,9 @@ def main():
 
         # Load labels
         if label_path:
+            source = _detect_label_source(label_path)
             label_lines = [l.strip() for l in label_path.read_text().strip().split("\n") if l.strip()]
+            label_lines = _filter_labels(label_lines, source)
         else:
             label_lines = []
 
@@ -317,7 +310,9 @@ def main():
         orig_h, orig_w = img.shape[:2]
 
         if label_path:
+            source = _detect_label_source(label_path)
             label_lines = [l.strip() for l in label_path.read_text().strip().split("\n") if l.strip()]
+            label_lines = _filter_labels(label_lines, source)
         else:
             label_lines = []
 

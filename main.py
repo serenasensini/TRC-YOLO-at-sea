@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-🚢 YOLO at Sea — Real-Time AI for Ship and Wreck Detection
-===========================================================
+🚢 YOLO at Sea — Real-Time AI for Wreck Detection
+===================================================
 
 Pipeline orchestrator: esegue tutti gli step in sequenza.
 Ogni step può essere eseguito anche singolarmente.
 
 Usage:
     python main.py --step all           # Esegue tutto
-    python main.py --step download      # Solo download (Kaggle + satellite)
+    python main.py --step download      # Solo download satellite
     python main.py --step annotate      # Solo auto-annotazione
     python main.py --step prepare       # Solo preparazione dataset
     python main.py --step train         # Solo training
@@ -23,34 +23,29 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent
 
 STEPS = {
-    "download_kaggle": {
-        "script": "scripts/download_kaggle.py",
-        "description": "📥 Step 1: Download Ships in Satellite Imagery dataset from Kaggle",
-        "requires_manual": "Token Kaggle (~/.kaggle/kaggle.json)",
-    },
     "download_satellite": {
         "script": "scripts/download_satellite.py",
-        "description": "🛰️  Step 2: Download satellite images (Google Maps / Mapbox)",
+        "description": "🛰️  Step 1: Download satellite images (Google Maps / Mapbox)",
         "requires_manual": "Google Static Maps API key or Mapbox access token",
     },
     "annotate": {
         "script": "scripts/auto_annotate.py",
-        "description": "🔍 Step 3: Auto-annotate images (Grounding DINO + SAM2)",
+        "description": "🔍 Step 2: Auto-annotate wreck images (Grounding DINO + SAM2)",
         "requires_manual": None,
     },
     "prepare": {
         "script": "scripts/prepare_dataset.py",
-        "description": "📦 Step 4: Prepare YOLO dataset (split + augmentation)",
+        "description": "📦 Step 3: Prepare YOLO dataset (split + resize)",
         "requires_manual": None,
     },
     "train": {
         "script": "scripts/train.py",
-        "description": "🏋️  Step 5: Train YOLOv11",
+        "description": "🏋️  Step 4: Train YOLOv11 (wreck detection)",
         "requires_manual": None,
     },
     "demo": {
         "script": "scripts/stream_demo.py",
-        "description": "🎬 Step 6: Real-time streaming demo",
+        "description": "🎬 Step 5: Real-time streaming demo",
         "requires_manual": None,
     },
 }
@@ -58,7 +53,7 @@ STEPS = {
 # Predefined step groups
 STEP_GROUPS = {
     "all": list(STEPS.keys()),
-    "download": ["download_kaggle", "download_satellite"],
+    "download": ["download_satellite"],
     "pipeline": ["annotate", "prepare", "train"],
     "full": list(STEPS.keys()),
 }
@@ -93,8 +88,6 @@ def show_pipeline_status():
     print("=" * 50)
 
     checks = {
-        "Kaggle dataset": (PROJECT_ROOT / "dataset" / "kaggle_raw").exists()
-                          and any((PROJECT_ROOT / "dataset" / "kaggle_raw").rglob("*.*")),
         "Satellite images": (PROJECT_ROOT / "dataset" / "satellite_raw").exists()
                             and any((PROJECT_ROOT / "dataset" / "satellite_raw").glob("*.png")),
         "Auto-annotations": (PROJECT_ROOT / "dataset" / "labels_auto").exists()
@@ -115,17 +108,17 @@ def show_pipeline_status():
 
 def main():
     parser = argparse.ArgumentParser(
-        description="🚢 YOLO at Sea — Pipeline Orchestrator",
+        description="🚢 YOLO at Sea — Wreck Detection Pipeline",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Step groups:
-  all        : Esegue tutti gli step (1-6)
-  download   : Solo download (Kaggle + satellite)
+  all        : Esegue tutti gli step (1-5)
+  download   : Solo download satellite
   pipeline   : Solo processing (annotate + prepare + train)
   full       : Tutto
 
 Single steps:
-  download_kaggle, download_satellite, annotate, prepare, train, demo
+  download_satellite, annotate, prepare, train, demo
 
 Examples:
   python main.py --step all
@@ -144,7 +137,7 @@ Examples:
 
     print()
     print("  🚢🌊  YOLO at Sea  🌊🚢")
-    print("  Real-Time AI for Ship and Wreck Detection")
+    print("  Real-Time AI for Wreck Detection")
     print()
 
     if args.status or args.step == "status":

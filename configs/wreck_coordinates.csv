@@ -1,11 +1,202 @@
 name,latitude,longitude,description
-ship1,42.100225,11.780394,Italy
-ship2,25.49844046,-76.64304723,Bahamas
-ship3,25.48325277,-76.64553069,Bahamas
-ship4,44.42338404,8.83661827,Genoa Italy
-ship5,44.42357039,8.83430645,Genoa Italy
-ship6,44.4230611,8.8358833,Genoa Italy
-ship7,1.26121681,103.81700648,Singapore
-ship8,1.26011847,103.84538389,Singapore
-ship9,1.25704468,103.84310026,Singapore
-ship10,34.16718306,-119.22429294,California USA
+SS_Maheno,-25.267204,153.2371477,Fraser Island wreck Australia
+MV_Dimitrios,36.7890368,22.5857987,Valtaki Beach Greece
+NV_Dimitrios,40.2154701,18.4613389,Salento Puglia Italy
+Eduard_Bohlen,-23.99595325,14.45748791,Skeleton Coast Namibia
+SS_Ayrfield,-33.83312963,151.07680459,Homebush Bay Sydney rusted hull
+Navagio_Wreck,37.85954092,20.62484606,Navagio Greece
+Sheridan_Wreck,43.75622605,-69.32168053,Maine United States
+JD_Rochford_Wreck,51.59603933,0.81533398,Rochford United Kingdom
+JD_Bassora,30.56469052,47.78753116,Bassora Iraq
+JD_Birkenhead,53.4032111,-3.04623901,Birkenhead United Kingdom
+JD_Lacaze,-34.43051383,-57.40818072,Lacaze Uruguay
+JD_Kodiak,57.69953671,-152.53911441,Kodiak Alaska USA
+Lady_Eva_Navire,50.01568856,-66.84355002,Gaspe Quebec Canada
+JD_Sungailat,-1.85894132,106.12757496,Sungailat Indonesia
+JD_Derby,-17.33952875,123.59609456,Derby Australia
+JD_Cape_Range,-21.78402189,114.16766666,Cape Range Australia
+JD_Alkimos,-31.61026839,115.65384435,Alkimos Australia
+The_Caleb,37.4981297,-122.4924979,Moss Beach California
+The_Caleb,37.49578603,-122.49328408,Mose Beach California
+JD_Metochi,35.50441224,23.6908325,Metochi Greece
+Lizie_J_Shipwreck,12.10904006,-61.74712536,Grenada Caribbean
+JD_Akutan,54.2087194,-165.6175082,Akutan Alaska USA
+JD_Lvinaya_Bay,44.6593091,147.03383944,Lvinaya Bay Russia
+JD_Ravenna,44.47072587,12.26590515,Ravenna Italy
+JD_Piel_Morena,-33.78509154,-59.1743463,Piel Morena Argentina
+JD_Puerto_Cortes,15.82649182,-87.93367841,Puerto Cortes Honduras
+JD_Quequen_River,-38.56976242,-58.71466326,Quequen River Argentina
+JD_Franks_Bay,59.14905544,-2.61659642,Franks Bay Scotland
+JD_Harbour,47.4447056,-53.2058222,Saint-Pierre Harbour Canada
+JD_Harbour_Grace,47.67062625,-53.25381016,Harbour Grace Canada
+JD_Hanish_Island,14.02534541,42.69217782,Hanish Island Yemen
+SS_City_of_Adelaide,-19.17474558,146.82543712,City of Adelaide Australia
+MV_Captayannis,55.9758955,-4.7417985,Helensburgh United Kingdom
+MV_Plassey,53.05581858,-9.50366356,Plassey United Kingdom
+SS_Benwood,25.0524961,-80.3323347,Miami Florida USA
+USS_Utah,21.36896929,-157.96253013,Utah USA
+SS_Palo_Alto,36.969532,-121.913978,Palo Alto California USA
+MS_World_Discoverer,-9.02292313,160.12319574,Solomon Islands
+JD_Rock_tuner,17.01183838,73.28324656,India
+JD_Iraq_Rock,29.97586218,48.21415425,Iraq
+Épave_du_frisco,45.06488767,-0.62680872,Gauriac France
+JD_Church,51.4898015,-9.3607348,Church Ireland
+Cotopaxi,-48.74579241,-74.42888724,Natales Cile
+MV_Logos,-54.9701194,-67.1309278,Beagle Channel Cile
+JD_Desert,45.17282648,47.46664337,Desert Kazakhstan
+JD_Andreanof_Island,52.00962528,-175.32323636,Andreanof Island Alaska USA
+JD_Collective_Wreck,-34.89729886,-56.21605229,Montevideo Uruguay
+JD_Wreck,-34.875217,-56.2136527,Montevideo Uruguay
+JD_Wreck_2,-34.8919995,-56.2404418,Montevideo Uruguay
+JD_Wreck_3,-34.8948836,-56.2449802,Montevideo Uruguay
+JD_Wreck_4,-34.8980504,-56.2785261,Montevideo Uruguay
+JD_Wreck_5,-34.870229,-56.3533595,Montevideo Uruguay
+JD_Wreck_6,-34.901211,-56.3054065,Montevideo Uruguay
+Ismail_Hakki,36.43621986,23.14248044,Ismail Hakki Greece
+Gulf_Dove_Wreck,12.6898104,54.1293389,Yemen
+HMS_Port_Napier,57.26588612,-5.68755011,Kyle of Lochalsh Cornwall
+JD_Khark,29.22508406,50.29845866,Iran
+Sofia_ship,36.91332086,7.14210481,Filfila Algeria
+Manassa_Rose,35.5044593,23.6901401,Kokkino Metochi Greece
+JD_Isabela,22.9242275,-79.9504236,Isabela de Sagua Cuba
+JD_Maluku,1.1451884,127.8319604,Maluku Indonesia
+JD_Iggesund,61.635514,17.1034531,Iggesund Svezia
+JD_West_Anchor_Cove,54.6650886,-163.1096827,West Anchor Cove Alaska USA
+JD_Pohnpei,6.9606625,158.2027425,Pohnpei Island Micronesia
+JD_Pohnpei_2,6.9758356,158.2036266,Pohnpei Island Micronesia
+JD_Ujelang,9.856433,160.8943245,Ujelang Atoll Micronesia
+JD_Messina,38.2066039,15.562295,Messina Italy
+JD_Totnes,50.4127296,-3.6510223,Totnes United Kingdom
+JD_Fara_Jordan,9.3140941,80.7910225,Sri Lanka
+JD_Fara_Jordan_2,9.3140941,80.7910225,Sri Lanka
+El_Llanitos,19.17904365,-104.69974327,Jalisco Mexico
+JD_Dammam,26.55588994,50.23932384,Dammam Saudi Arabia
+JD_Bostanu,27.07922766,56.01968633,Bostanu Iran
+JD_Bandard,27.13190324,56.19512496,Bandard Iran
+HMS_Parramatta,-33.50107709,151.18148844,Nuovo Galles del Sud Australia
+JD_Saint_Antoine,47.0553812,-70.5606603,Saint Antoine Quebec Canada
+JD_Saint_George,43.7562307,-69.3224866,St.George Maine USA
+JD_Wreck_Stronsay,59.149054,-2.616564,Whitehall UK
+SS_Kyle,47.670537,-53.2557509,Harbour Grace Canada
+Hamzeh_Wreck,38.1459096,45.4192387,Sharafkhaneh Iran
+Noah_Wreck,38.16235,45.4714132,Sharafkhaneh Iran
+Hippa_Wreck,53.52442249,-132.98535023,Hippa British Columbia Canada
+Epaves_Du_Niagara,41.9774419,9.4329353,Serra di Fiumorbo Francia
+North_Sentinel,41.97744435,9.43366526,North Sentinel Island
+Pagrus_I,-38.77082179,-59.5274332,Pagrus Argentina
+Dalblair_Ship,-20.44383986,57.73142645,Blue Ray Mauritius
+Nand_Aparajita,10.5411174,72.6184088,Kavaratti India
+Sveitar_Wreck,63.93776321,-16.40257055,Islanda
+Ventanilla_Wreck,-11.87377949,-77.159182,Ventanilla Peru
+JD_Somalia,-11.8737998,-77.1601568,Somalia
+Hrafh_Ship,63.8313549,-22.4186696,Grindavik Iceland
+JD_Otter,49.5966253,-63.777361,Otter Island Canada
+F131_Wreck,36.88492832,27.15665548,Dikeo Greece
+Borough_Lake,57.51143941,-157.40147677,Borough Lake Alaska USA
+Bateau_Noye,36.8733673,11.1375182,Hammam Ghezezé Tunisia
+JD_Ensemble,-5.1070173,119.4249498,Kaluku Bodoa Indonesia
+JD_Cabello,10.4650061,-67.9838145,Puerto Cabello Venezuela
+Steambot_Wreck,10.4650061,-67.9838145,Everett Washington USA
+JD_NYC,40.5575597,-74.2167493,New York City New York USA
+JD_Arthur,40.5575597,-74.2167493,New York City New York USA
+JD_Arthur_2,40.5575597,-74.2167493,New York City New York USA
+JD_Arthur_3,40.5591696,-74.2140374,New York City New York USA
+JD_Cornwall,40.5591696,-74.2140374,New York City New York USA
+JD_Arthur_4,40.5591696,-74.2140374,New York City New York USA
+JD_Cornwall,40.5591696,-74.2140374,New York City New York USA
+Korabel_Admiral,50.37014106,30.57095932,Kiev Ucraina
+Bendje_Wreck,50.37013905,30.57096562,Port-Gentil Gabon
+London_wreck,51.3618974,0.7775909,London United Kingdom
+London_wreck_2,51.36323323,0.77928542,London United Kingdom
+Bengasi_wreck,32.11496353,20.05115456,Bengasi Iran
+Garden_Island_wreck,-34.81169863,138.53041893,Adelaide Australia
+Garden_Island_wreck_2,-34.81166955,138.53034209,Adelaide Australia
+Garden_Island_wreck_3,-34.81172194,138.53045745,Adelaide Australia
+Garden_Island_wreck_4,-34.81149779,138.52962689,Adelaide Australia
+Garden_Island_wreck_5,-34.81162134,138.52997755,Adelaide Australia
+Makassar_Wreck,-5.10556591,119.42533402,Maluku Indonesia
+Puerto_Cabello,10.46520738,-67.98366805,Puerto Cabello Venezuela
+Puerto_Cabello_2,10.46612266,-67.98332774,Puerto Cabello Venezuela
+Cagliari_Wreck,39.20645291,9.10181894,Cagliari Italy
+Shaker_Wreck,48.0256222,-122.2241833,Everett Washington USA
+Shaker_Wreck_2,48.02422688,-122.21878016,Everett Washington USA
+Shaker_Wreck_3,48.02452217,-122.21979161,Everett Washington USA
+Shaker_Wreck_4,48.02470269,-122.2206195,Everett Washington USA
+Shaker_Wreck_5,48.02501667,-122.22204427,Everett Washington USA
+Shaker_Wreck_6,48.02534714,-122.22304153,Everett Washington USA
+Spencer_Wreck,47.98968946,-122.15278625,Everett Washington USA
+SF_Wreck,38.0317255,-121.84856836,San Francisco California USA
+NY_Wreck,40.55602493,-74.2197373,New York City New York USA
+NY_Wreck_2,40.55573967,-74.22034499,New York City New York USA
+NY_Wreck_3,40.55618457,-74.21791783,New York City New York USA
+NY_Wreck_4,40.55679434,-74.21630846,New York City New York USA
+NY_Wreck_5,40.55785246,-74.21535031,New York City New York USA
+NY_Wreck_6,40.55776944,-74.21514451,New York City New York USA
+NY_Wreck_7,40.55823527,-74.21439557,New York City New York USA
+NY_Wreck_8,40.55901162,-74.21291369,New York City New York USA
+Engel_Wreck,41.15938632,-73.87234403,Ossining New York USA
+Donahue_Wreck,41.44382497,-73.99792021,Cornawall New York USA
+Corigliano_Calabro_Wreck,39.6639391,16.52244061,Corigliano Calabro Italy
+Troms_Wreck,69.66825123,19.019353,Troms Norway
+Vrag_Wreck,66.7881338,13.1239682,Vrag Norway
+Trondelag,64.5832726,10.8992244,Trondelag Norway
+Fevag,63.6906276,9.8303949,Fevag Norway
+Rogaland_Wreck,59.2996271,5.4055355,,Rogaland Norway
+Cement_ship,55.9912567,11.2998059,Denmark
+Wrak_Wreck,54.61229324,18.77700574,Poland
+Wrak_II,54.61266925,18.77820047,Poland
+Oblast,60.0697861,26.9535558,Oblast Russia
+San_Tome,0.4121433,6.6640099,San Tome and Principe
+Golfo_Guinea,-0.6845517,8.7763179,Golfo Guinea Guinea
+Benjde,-0.6921177,8.7741049,Benjde Guinea Guinea
+Angola,-6.1116707,12.3205179,Angola Angola
+Angolan_Wreck,-8.5649857,13.3695459,Angola Angola
+Angolan_Wreck_2,-8.6258857,13.4002849,Angola Angola
+Angolan_Wreck_3,-8.6329584,13.4043964,Angola Angola
+Angolan_Wreck_4,-8.6414387,13.4113659,Angola Angola
+Lobito,-12.3519947,13.5597719,Lobito Angola
+Caota,-12.5904967,13.2640429,Caota Angola
+Zelia,-22.24160741,14.35338258,Zelia Namibia
+Shawnee_Wreck,-23.6731958,14.5032359,Namibia
+Otavi_Shipwreck,-25.732425,14.8326188,Namibia
+Karas,-25.7324178,14.8326659,Karas Namibia
+Sudafrica_Wreck,-25.7324178,14.8326659,Sudafrica
+Antipolis_Shipwreck,-33.9845858,18.3561968,Cape Town Sudafrica
+Bos_400,-34.0369701,18.307531,Cape Town Sudafrica
+San_Pasqual,22.6233759,-79.2240671,Cuba
+Sapona_Wreck,25.65086317,-79.29371459,Bahamas
+Monroe,25.1773582,-80.3473301,Monroe Florida
+Harlem,22.9600452,-83.1825371,Harlem Cuba
+Harlem_2,22.9584642,-83.1772871,Harlem Cuba
+Harlem_3,2.9584642,-83.1772871,Harlem Cuba
+Harlem_4,22.9602772,-83.1736451,Harlem Cuba
+Harlem_5,22.9519242,-83.1697061,Harlem Cuba
+Harlem_6,22.9455072,-83.1713061,Harlem Cuba
+Honduras,16.3957183,-86.3550051,Honduras Honduras
+Cayman,19.7134393,-79.9758851,Cayman Islands Cayman Islands
+Limon_Bay,9.3623543,-79.9446381,Limon Bay Panama
+Waverley_Wreck,-41.519036,174.0655629,Waverley New Zealand
+Janie_Saddon_Wreck,-41.123637,173.0251829,Janie Saddon New Zealand
+Dunedin_City,-45.8286031,170.6364529,Dunedin New Zealand
+Greenpoint_Wreck,-45.8286031,170.6364529,Greenpoint New Zealand
+Greenpoint_Wreck_2,-46.5702151,168.3165159,Greenpoint New Zealand
+Moreton_Island_Wreck,-27.1640974,153.3679292,Moreton Island New Zealand
+Moreton_Island_Wreck_2,-27.1636361,153.3669043,Moreton Island New Zealand
+Moreton_Island_Wreck_3,-27.1638056,153.3675276,Moreton Island New Zealand
+Cape_Barren_Islands,-40.286116,148.3292409,Cape Barren Islands Australia
+Otago_Wreck,-42.8102306,147.2986188,Otago Tasmania
+Santiago_Wreck,-34.8104129,138.5409529,Garden_Island Australia
+Dorothy_Wreck,-34.8123049,138.5394109,Garden_Island Australia
+Mildura_Wreck,-21.7839998,114.1670349,North West Cape Australia
+Bangka_Wreck,-1.8592017,106.1285749,Bangka Indonesia
+Samut_Wreck,13.5279472,100.2657105,Samut Prakan Thailand
+Samut_Wreck_2,13.5289913,100.2659099,Samut Prakan Thailand
+Samut_Wreck_3,13.52795,100.2659938,Samut Prakan Thailand
+Samut_Wreck_4,13.528325,100.2659105,Samut Prakan Thailand
+NY_Wreck_9,40.805931,-73.8460801,New York City New York USA
+NY_Wreck_10,40.63845,-74.1539001,New York City New York USA
+Arthur_Wreck,40.5372685,-74.2488892,New York City New York USA
+Kamcatsk_Wreck,6.233369,162.573116,Kamcatsk Russia
+Kamcatsk_Wreck_2,56.234204,162.5966156,Kamcatsk Russia
+Cichakev,51.4678448,140.7753459,Cichakev Russia
+Golfo_Persico,29.2250325,50.2977283,Golfo Persico Iran

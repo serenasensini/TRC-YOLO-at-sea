@@ -38,7 +38,7 @@ from tqdm import tqdm
 # ---------- CONFIG ----------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 COORDS_CSV = PROJECT_ROOT / "configs" / "wreck_coordinates.csv"
-OUTPUT_DIR = PROJECT_ROOT / "dataset" / "satellite_raw"
+OUTPUT_DIR = PROJECT_ROOT / "dataset" / "satellite_raw_old"
 
 # Common settings
 IMAGE_SIZE = "640x640"

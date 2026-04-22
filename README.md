@@ -1,6 +1,6 @@
-# 🚢 YOLO at Sea — Real-Time AI for Ship and Wreck Detection
+# 🚢 YOLO at Sea — Real-Time AI for Wreck Detection
 
-> **Talk Abstract:** *The ocean hides stories—some sailing proudly, others resting as silent wrecks beneath the waves. This project dives into how YOLO, a state-of-the-art object detection model, can revolutionize maritime monitoring by identifying ships and wrecks in real time from satellite and aerial imagery.*
+> **Talk Abstract:** *The ocean hides stories—some sailing proudly, others resting as silent wrecks beneath the waves. This project dives into how YOLO, a state-of-the-art object detection model, can revolutionize maritime monitoring by identifying wrecks in real time from satellite imagery.*
 
 ## 🏗️ Project Structure
 
@@ -9,22 +9,23 @@ TheRedCode-YOLO-at-sea/
 ├── main.py                     # Pipeline orchestrator
 ├── requirements.txt            # Dependencies
 ├── configs/
-│   ├── dataset.yaml            # YOLO dataset configuration
+│   ├── dataset.yaml            # YOLO dataset configuration (nc=1, Wreck)
 │   └── wreck_coordinates.csv   # Google Maps wreck pins
 ├── scripts/
-│   ├── download_kaggle.py      # Step 1: Download Kaggle dataset
-│   ├── download_satellite.py   # Step 2: Download satellite images
-│   ├── auto_annotate.py        # Step 3: Auto-annotation (GDINO+SAM2)
-│   ├── prepare_dataset.py      # Step 4: Dataset preparation
-│   ├── train.py                # Step 5: YOLOv11 training
-│   └── stream_demo.py          # Step 6: Real-time streaming demo
+│   ├── download_satellite.py   # Step 1: Download satellite images
+│   ├── auto_annotate.py        # Step 2: Auto-annotation (GDINO+SAM2)
+│   ├── prepare_dataset.py      # Step 3: Dataset preparation
+│   ├── train.py                # Step 4: YOLOv11 training
+│   └── stream_demo.py          # Step 5: Real-time streaming demo
 ├── dataset/
-│   ├── kaggle_raw/             # Ships in Satellite Imagery (ship/no_ship)
-│   ├── satellite_raw/          # Downloaded satellite images
+│   ├── satellite_raw/          # Downloaded satellite images (wrecks)
 │   ├── labels_auto/            # Auto-generated annotations
+│   ├── labels_studio/          # Label Studio corrected annotations
 │   ├── images/{train,val}/     # Final dataset images
 │   └── labels/{train,val}/     # Final dataset labels
 ├── models/                     # Trained weights (best.pt)
+├── notebooks/
+│   └── train_colab.ipynb       # Google Colab training notebook
 └── runs/                       # Training logs & demo output
 ```
 
@@ -33,9 +34,8 @@ TheRedCode-YOLO-at-sea/
 ### Prerequisites (manual steps)
 
 1. **Python 3.10+** with a virtual environment
-2. **Kaggle API Token**: Download from [kaggle.com/settings](https://www.kaggle.com/settings) → place in `~/.kaggle/kaggle.json`
-3. **Satellite Imagery API Key**: Either [Google Static Maps](https://console.cloud.google.com/apis/credentials) or [Mapbox](https://account.mapbox.com/access-tokens/) (recommended if Google satellite is unavailable in your region)
-4. **GPU (recommended)**: NVIDIA GPU with ≥8GB VRAM for training
+2. **Satellite Imagery API Key**: Either [Google Static Maps](https://console.cloud.google.com/apis/credentials) or [Mapbox](https://account.mapbox.com/access-tokens/) (recommended)
+3. **GPU (recommended)**: NVIDIA GPU with ≥8GB VRAM for training, or use [Google Colab](https://colab.research.google.com/) (T4 GPU free tier)
 
 ### Setup
 
@@ -51,11 +51,10 @@ python main.py --status
 
 ```bash
 # Step by step
-python scripts/download_kaggle.py
 python scripts/download_satellite.py --provider mapbox --api-key YOUR_MAPBOX_TOKEN
 python scripts/auto_annotate.py
 python scripts/prepare_dataset.py
-python scripts/train.py --epochs 100 --device 0
+python scripts/train.py --epochs 200 --device 0
 python scripts/stream_demo.py
 
 # Or all at once
@@ -64,32 +63,27 @@ python main.py --step all
 
 ## 📋 Pipeline Steps
 
-### Step 1 — Download Kaggle Dataset
-```bash
-python scripts/download_kaggle.py
-```
-Downloads and extracts the [Ships in Satellite Imagery](https://www.kaggle.com/datasets/rhammell/ships-in-satellite-imagery) dataset from Kaggle. Contains ~4000 satellite image chips (80×80 px) from Planet Labs, each classified as "ship" or "no-ship". Images are organized into `ship/` and `no_ship/` subdirectories.
-
-### Step 2 — Download Satellite Images
+### Step 1 — Download Satellite Images
 ```bash
 # Google (default)
 python scripts/download_satellite.py --api-key YOUR_GOOGLE_API_KEY
-# Mapbox (if Google satellite is unavailable in your region)
+# Mapbox (recommended)
 python scripts/download_satellite.py --provider mapbox --api-key YOUR_MAPBOX_TOKEN
 ```
 Downloads high-resolution satellite images from Google Static Maps or Mapbox for each wreck coordinate in `configs/wreck_coordinates.csv`. Images are captured at zoom levels 17-19 (~0.3-1.2m/px).
 
 **💡 Edit `configs/wreck_coordinates.csv` to add your own Google Maps pins!**
 
-### Step 3 — Auto-Annotation + Label Studio Review
+### Step 2 — Auto-Annotation + Label Studio Review
 ```bash
 python scripts/auto_annotate.py
 ```
-Automatically generates initial YOLO-format bounding box annotations:
-- **Kaggle images**: Labels derived from the ship/no-ship classification.
-- **Satellite images**: Uses Grounding DINO + SAM2 (zero-shot), with YOLOv8 COCO fallback.
+Automatically generates initial YOLO-format bounding box annotations for wreck detection:
+- **Grounding DINO + SAM2** (zero-shot): Uses text prompts ("shipwreck", "wreck", "rusted ship", "beached ship", etc.) to detect wrecks.
+- **YOLOv8 COCO fallback**: Uses pre-trained COCO model to detect `boat` class as proxy for wrecks.
+- All detections are mapped to **class 0 (Wreck)**.
 
-#### Label Studio Review (required)
+#### Label Studio Review (recommended)
 
 After auto-annotation, review and correct labels using [Label Studio](https://labelstud.io/):
 
@@ -98,56 +92,57 @@ After auto-annotation, review and correct labels using [Label Studio](https://la
    pip install label-studio
    label-studio start
    ```
-2. **Create a new project** and import your images from `dataset/kaggle_raw/` and `dataset/satellite_raw/`.
-3. **Configure the labeling interface** — use the **Object Detection with Bounding Boxes** template and set these labels:
-   - `ship` (class 0) — Active vessels
-   - `wreck` (class 1) — Shipwrecks, beached/rusted ships
-   - `sea` (class 2) — Open sea / background water areas
+2. **Create a new project** and import your images from `dataset/satellite_raw/`.
+3. **Configure the labeling interface** — use the **Object Detection with Bounding Boxes** template with a single label:
+   - `Wreck` (class 0) — Shipwrecks, beached/rusted ships, stranded vessels
 4. **Pre-import auto-generated labels** (optional): upload the `.txt` files from `dataset/labels_auto/` to speed up review.
 5. **Label/correct all images** in the Label Studio UI.
-6. **Export in YOLO format**: go to *Export* → select **YOLO** format. This produces a zip with a `labels/` folder.
+6. **Export in YOLO format**: go to *Export* → select **YOLO** format.
 7. **Copy the exported labels** into the project:
    ```bash
-   # Unzip the Label Studio export and copy label .txt files
-   cp /path/to/label-studio-export/labels/*.txt dataset/labels_studio/
+   cp /path/to/label-studio-export/labels/*.txt dataset/labels_studio/labels/
    ```
    The `dataset/labels_studio/` folder takes priority over `dataset/labels_auto/` during dataset preparation.
 
-> **⚠️ Important:** Make sure Label Studio's YOLO export maps classes in this order: `0=ship`, `1=wreck`, `2=sea`. Verify by checking a few exported `.txt` files.
+> **⚠️ Important:** Make sure Label Studio's YOLO export maps the class as `0=Wreck`. Verify by checking a few exported `.txt` files — all lines should start with `0`.
 
-### Step 4 — Prepare Dataset
+### Step 3 — Prepare Dataset
 ```bash
 python scripts/prepare_dataset.py
 ```
-Merges all images and labels (preferring Label Studio labels over auto-generated ones), applies 80/20 train/val split, resizes to 640×640, and generates augmented variants (flip, rotation, brightness).
+Collects satellite images with their labels (preferring Label Studio over auto-generated), applies 80/20 train/val split, and resizes to 640×640.
 
-The script looks for labels in this order of priority:
-1. `dataset/labels_studio/` — Label Studio corrected labels ✅
-2. `dataset/labels_auto/` — Auto-generated labels (fallback)
+The script filters labels to keep **only wreck annotations (class 0)**, automatically handling different labeling schemes from Label Studio and auto-annotate.
 
-### Step 5 — Train YOLOv11
+### Step 4 — Train YOLOv11
 ```bash
 # With GPU (recommended, requires ≥8GB VRAM)
-python scripts/train.py --epochs 100 --device 0
+python scripts/train.py --epochs 200 --device 0
 
 # CPU only (much slower)
-python scripts/train.py --epochs 100 --device cpu
+python scripts/train.py --epochs 200 --device cpu
+
+# Or use Google Colab (recommended for free GPU)
+# Upload dataset.zip + notebooks/train_colab.ipynb to Colab
 ```
-Fine-tunes YOLOv11m on the prepared dataset. The model will learn to detect 3 classes: **ship**, **wreck**, and **sea**. Key params:
-- Mosaic + MixUp augmentation
-- AdamW optimizer with warmup
-- Early stopping (patience=20)
+Fine-tunes YOLOv11 on the prepared dataset for **single-class wreck detection**. Key training features:
+- `single_cls=True` — treats all annotations as one class
+- `freeze=10` — freezes backbone layers to prevent overfitting on small datasets
+- Low learning rate (`lr0=0.0005`) for stable fine-tuning
+- Aggressive augmentation (mosaic, mixup, copy_paste, rotation, flip)
+- AdamW optimizer with dropout regularization
+- Early stopping (patience=40)
 
-After training, the best weights are saved to `models/best.pt` and validation metrics (mAP50, mAP50-95) are printed.
+After training, the best weights are saved to `models/best.pt`.
 
-> **💡 Tip:** If training loss plateaus early, try increasing epochs or reducing batch size (`--batch 8`).
+> **💡 Tip:** For best results, use the Colab notebook (`notebooks/train_colab.ipynb`) with a T4 GPU.
 
-### Step 6 — Real-Time Streaming Demo
+### Step 5 — Real-Time Streaming Demo
 ```bash
 python scripts/stream_demo.py
 ```
-Simulates a maritime surveillance system by processing images one-by-one with live visualization:
-- Bounding boxes color-coded by class: 🟢 ship, 🔴 wreck, 🔵 sea
+Simulates a maritime surveillance system by processing satellite images one-by-one with live visualization:
+- Bounding boxes for detected wrecks (🔴 red)
 - Side panel with live statistics
 - Video recording (MP4) saved to `runs/demo_output.mp4`
 
@@ -159,35 +154,39 @@ If no trained model is found in `models/best.pt`, the demo falls back to a pre-t
 
 | Source | Resolution | Cost | Verdict |
 |--------|-----------|------|---------|
-| **Kaggle Ships in Satellite Imagery** | ~3m/px (80×80 crops) | Free | ✅ Ship/no-ship classification |
 | **Google Static Maps** | ~0.3m/px (z19) | Free tier: 28k/month | ✅ High-res (if available) |
-| **Mapbox Satellite** | ~0.5m/px | Free tier: 50k/month | ✅ Recommended alternative |
+| **Mapbox Satellite** | ~0.5m/px | Free tier: 50k/month | ✅ Recommended |
 | Sentinel-2 (Copernicus) | 10m/px | Free | ❌ Too coarse for wrecks |
 | Planet Labs | 3m/px | Commercial | For production |
 
-The Kaggle dataset provides a large volume of pre-labeled ship/no-ship satellite crops from Planet Labs. Google Static Maps or Mapbox at zoom 18-19 gives sub-meter resolution, ideal for detecting ships and wrecks in larger scenes.
+Google Static Maps or Mapbox at zoom 18-19 gives sub-meter resolution, ideal for detecting wrecks in satellite scenes.
 
 ## 🏷️ Auto-Annotation Strategy
 
-The annotation pipeline uses a **two-source approach**:
+The annotation pipeline uses **zero-shot detection** on satellite images:
 
-1. **Kaggle ship/no-ship images** (80×80 crops): Labels are derived directly from the dataset classification. Ship images receive a centered bounding box; no-ship images serve as background (negative examples).
+- **Grounding DINO + SAM2** (preferred): Uses text prompts ("shipwreck", "wreck", "rusted ship", "beached ship", "abandoned ship", "stranded vessel") to detect and segment wreck objects.
+- **YOLOv8 COCO fallback**: Uses pre-trained COCO model to detect `boat` class as a proxy for wrecks.
 
-2. **Satellite images** (Google/Mapbox, 640×640):
-   - **Grounding DINO + SAM2** (zero-shot): Uses text prompts ("ship", "wreck", "vessel") to detect and segment objects.
-   - **YOLOv8 COCO fallback**: Uses pre-trained COCO model to detect `boat` class.
+All detections are mapped to a single class: **0 = Wreck**.
 
-**Manual review is always recommended** for a subset of annotations to ensure quality.
+**Manual review with Label Studio is always recommended** to ensure annotation quality.
 
 ## 📊 Classes
 
 | ID | Class | Description |
 |----|-------|-------------|
-| 0 | `ship` | Active vessels (cargo, tanker, fishing, etc.) |
-| 1 | `wreck` | Shipwrecks, beached/rusted ships, sunken structures |
-| 2 | `sea` | Open sea, background water areas |
+| 0 | `Wreck` | Shipwrecks, beached/rusted ships, stranded vessels, sunken structures visible from satellite |
+
+## 🏋️ Training on Google Colab
+
+1. Run `python scripts/prepare_dataset.py` locally
+2. Create the zip: `cd dataset && zip -r ../dataset.zip images/ labels/ && cd ..`
+3. Upload `dataset.zip` and `notebooks/train_colab.ipynb` to Colab
+4. Set Runtime → T4 GPU
+5. Execute all cells
+6. Download `best.pt` and place it in `models/`
 
 ## 📄 License
 
-This project is for educational/research purposes. Satellite images are subject to their respective providers' Terms of Service (Google, Mapbox, Planet Labs).
-
+This project is for educational/research purposes. Satellite images are subject to their respective providers' Terms of Service (Google, Mapbox).

@@ -1,23 +1,16 @@
 #!/usr/bin/env python3
 """
-Step 3 — Auto-annotazione con strategie multiple
-Genera bounding box in formato YOLO per tutte le immagini del dataset.
+Step 3 — Auto-annotazione per Wreck Detection
+Genera bounding box in formato YOLO per le immagini satellitari.
 
-Strategia per immagini Kaggle (ships-in-satellite-imagery):
-  - Le immagini 80×80 sono già classificate ship/no-ship dal filename.
-  - Ship: bounding box centrato che copre ~70% dell'immagine (classe 0).
-  - No-ship: label vuoto (immagine di background).
-
-Strategia per immagini satellitari (Google/Mapbox):
-  - Grounding DINO + SAM2: zero-shot object detection con prompt testuali
-  - Fallback: YOLOv8 pre-trainato su COCO (rileva barche)
+Strategia:
+  - Grounding DINO + SAM2: zero-shot detection con prompt testuali per wrecks
+  - Fallback: YOLOv8 pre-trainato su COCO (rileva barche come proxy)
   - Output: file .txt in formato YOLO (class x_center y_center w h)
 
-
-Classi: 0=ship, 1=wreck
+Classe unica: 0=wreck
 """
 
-import os
 from pathlib import Path
 
 import cv2
@@ -25,32 +18,27 @@ from tqdm import tqdm
 
 # ---------- CONFIG ----------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-KAGGLE_DIR = PROJECT_ROOT / "dataset" / "kaggle_raw"
-SATELLITE_DIR = PROJECT_ROOT / "dataset" / "satellite_raw"
+SATELLITE_DIR = PROJECT_ROOT / "dataset" / "satellite_raw_old"
 OUTPUT_LABEL_DIR = PROJECT_ROOT / "dataset" / "labels_auto"
 CONFIDENCE_THRESHOLD = 0.25
 # ----------------------------
 
-# Prompt di detection per Grounding DINO
-SHIP_PROMPTS = ["ship", "vessel", "boat", "cargo ship", "tanker"]
-WRECK_PROMPTS = ["shipwreck", "sunken ship", "wreck", "rusted ship", "beached ship"]
+# Prompt di detection per Grounding DINO (solo wrecks)
+WRECK_PROMPTS = ["shipwreck", "sunken ship", "wreck", "rusted ship", "beached ship",
+                 "abandoned ship", "stranded vessel"]
 
 
-def collect_images() -> tuple[list[Path], list[Path]]:
-    """Raccoglie le immagini, separate per fonte (Kaggle vs satellite)."""
+def collect_images() -> list[Path]:
+    """Raccoglie le immagini satellitari."""
     extensions = ("*.jpg", "*.jpeg", "*.png", "*.tif", "*.bmp")
-    kaggle_images = []
-    satellite_images = []
-
+    images = []
     for ext in extensions:
-        kaggle_images.extend(KAGGLE_DIR.rglob(ext))
-        satellite_images.extend(SATELLITE_DIR.rglob(ext))
-
-    print(f"📸  Found {len(kaggle_images)} Kaggle images + {len(satellite_images)} satellite images")
-    return sorted(kaggle_images), sorted(satellite_images)
+        images.extend(SATELLITE_DIR.rglob(ext))
+    print(f"📸  Found {len(images)} satellite images")
+    return sorted(images)
 
 
-def bbox_to_yolo(bbox, img_w: int, img_h: int, class_id: int) -> str:
+def bbox_to_yolo(bbox, img_w: int, img_h: int, class_id: int = 0) -> str:
     """Converte bbox [x1, y1, x2, y2] in formato YOLO normalizzato."""
     x1, y1, x2, y2 = bbox
     x_center = ((x1 + x2) / 2) / img_w
@@ -63,50 +51,6 @@ def bbox_to_yolo(bbox, img_w: int, img_h: int, class_id: int) -> str:
     w = max(0.0, min(1.0, w))
     h = max(0.0, min(1.0, h))
     return f"{class_id} {x_center:.6f} {y_center:.6f} {w:.6f} {h:.6f}"
-
-
-def annotate_kaggle_images(images: list[Path]) -> int:
-    """
-    Annota le immagini Kaggle ships-in-satellite-imagery.
-    Le immagini sono 80×80 e il filename inizia con il label:
-      - 1__... → ship (classe 0): bbox centrato ~70% dell'immagine
-      - 0__... → no-ship: label vuoto (background)
-    Se sono organizzate in sottocartelle ship/ e no_ship/, usa quelle.
-    """
-    print("🏷️   Annotating Kaggle ship/no-ship images...")
-    annotated = 0
-
-    for img_path in tqdm(images, desc="Kaggle labels"):
-        # Determina se è ship o no-ship dal filename o dalla cartella
-        is_ship = False
-        if img_path.parent.name == "ship":
-            is_ship = True
-        elif img_path.parent.name == "no_ship":
-            is_ship = False
-        elif img_path.name.startswith("1__"):
-            is_ship = True
-        elif img_path.name.startswith("0__"):
-            is_ship = False
-        else:
-            # Filename non riconosciuto, skip
-            continue
-
-        label_path = OUTPUT_LABEL_DIR / f"{img_path.stem}.txt"
-
-        if is_ship:
-            # Bounding box centrato che copre ~70% dell'immagine
-            # YOLO format: class x_center y_center width height (normalizzati)
-            label_lines = ["0 0.500000 0.500000 0.700000 0.700000"]
-            with open(label_path, "w") as f:
-                f.write("\n".join(label_lines))
-            annotated += 1
-        else:
-            # No-ship → file label vuoto (immagine di background)
-            with open(label_path, "w") as f:
-                f.write("")
-
-    print(f"✅  Kaggle: {annotated} ship images annotated, rest as background")
-    return annotated
 
 
 def try_autodistill_annotation(images: list[Path]) -> bool:
@@ -122,24 +66,20 @@ def try_autodistill_annotation(images: list[Path]) -> bool:
         print("⚠️  autodistill-grounded-sam-2 non disponibile, uso metodo fallback")
         return False
 
-    print("🔍  Usando Grounding DINO + SAM2 (autodistill) per auto-annotazione...")
+    print("🔍  Usando Grounding DINO + SAM2 (autodistill) per auto-annotazione wrecks...")
 
-    # Define ontology: map text prompts to class names
+    # Define ontology: all prompts map to wreck (single class)
     ontology = CaptionOntology({
-        "ship": "ship",
-        "vessel": "ship",
-        "boat": "ship",
-        "cargo ship": "ship",
         "shipwreck": "wreck",
         "sunken ship": "wreck",
         "wreck": "wreck",
         "rusted ship": "wreck",
         "beached ship": "wreck",
+        "abandoned ship": "wreck",
+        "stranded vessel": "wreck",
     })
 
     base_model = GroundedSAM2(ontology=ontology)
-
-    class_name_to_id = {"ship": 0, "wreck": 1}
     annotated = 0
 
     for img_path in tqdm(images, desc="Auto-annotating (GSAM2)"):
@@ -157,16 +97,8 @@ def try_autodistill_annotation(images: list[Path]) -> bool:
                     conf = result.confidence[i] if result.confidence is not None else 1.0
                     if conf < CONFIDENCE_THRESHOLD:
                         continue
-
-                    class_name_idx = result.class_id[i] if result.class_id is not None else 0
-                    # Map supervision class index to our class names
-                    class_names = list(class_name_to_id.keys())
-                    if class_name_idx < len(class_names):
-                        class_id = class_name_to_id[class_names[class_name_idx]]
-                    else:
-                        class_id = 0
-
-                    yolo_line = bbox_to_yolo(bbox, img_w, img_h, class_id)
+                    # All detections are class 0 (wreck)
+                    yolo_line = bbox_to_yolo(bbox, img_w, img_h, class_id=0)
                     label_lines.append(yolo_line)
 
             # Save label file
@@ -181,15 +113,15 @@ def try_autodistill_annotation(images: list[Path]) -> bool:
             print(f"   ⚠️  Error on {img_path.name}: {e}")
             continue
 
-    print(f"✅  Grounded SAM2: annotated {annotated}/{len(images)} images with detections")
+    print(f"✅  Grounded SAM2: annotated {annotated}/{len(images)} images with wreck detections")
     return True
 
 
 def try_ultralytics_annotation(images: list[Path]) -> bool:
     """
     Metodo B (fallback): usa un modello YOLO pre-trainato su COCO
-    per rilevare barche/navi (classe 'boat' in COCO = id 8).
-    Non distingue ship vs wreck, ma è un buon punto di partenza.
+    per rilevare barche (classe 'boat' in COCO = id 8) come proxy per wrecks.
+    Richiede review manuale successiva.
     """
     try:
         from ultralytics import YOLO
@@ -198,10 +130,10 @@ def try_ultralytics_annotation(images: list[Path]) -> bool:
         return False
 
     print("🔍  Usando YOLOv8n pre-trainato (COCO) come fallback...")
-    print("    ℹ️  Rileverà 'boat' da COCO e le annoterà come 'ship' (classe 0)")
-    print("    ℹ️  Per la classe 'wreck', sarà necessaria annotazione manuale")
+    print("    ℹ️  Rileverà 'boat' da COCO e le annoterà come 'wreck' (classe 0)")
+    print("    ℹ️  Review manuale fortemente consigliata!")
 
-    model = YOLO("yolov8n.pt")  # Download automatico se non presente
+    model = YOLO("yolov8n.pt")
 
     # In COCO, 'boat' è classe 8
     COCO_BOAT_ID = 8
@@ -226,14 +158,9 @@ def try_ultralytics_annotation(images: list[Path]) -> bool:
                     continue
                 for box in r.boxes:
                     cls_id = int(box.cls[0])
-                    conf = float(box.conf[0])
-
-                    # Prendiamo solo 'boat' da COCO
                     if cls_id != COCO_BOAT_ID:
                         continue
-
                     xyxy = box.xyxy[0].cpu().numpy()
-                    # Tutte le barche come classe 0 (ship) - wreck richiede review manuale
                     yolo_line = bbox_to_yolo(xyxy, img_w, img_h, class_id=0)
                     label_lines.append(yolo_line)
 
@@ -248,10 +175,8 @@ def try_ultralytics_annotation(images: list[Path]) -> bool:
             print(f"   ⚠️  Error on {img_path.name}: {e}")
             continue
 
-    print(f"✅  YOLOv8 fallback: annotated {annotated}/{len(images)} images with boat detections")
-    print("⚠️  NOTA: tutte le detection sono classe 'ship' (0).")
-    print("   Per avere la classe 'wreck' (1), dovrai rivedere manualmente le label")
-    print("   con uno strumento come Label Studio o CVAT.")
+    print(f"✅  YOLOv8 fallback: annotated {annotated}/{len(images)} images")
+    print("⚠️  NOTA: tutte le detection sono 'wreck' (0) — review manuale consigliata.")
     return True
 
 
@@ -261,7 +186,6 @@ def generate_annotation_report():
     total = len(label_files)
     non_empty = 0
     total_boxes = 0
-    class_counts = {0: 0, 1: 0, 2: 0}
 
     for lf in label_files:
         lines = lf.read_text().strip().split("\n")
@@ -269,48 +193,33 @@ def generate_annotation_report():
         if lines:
             non_empty += 1
             total_boxes += len(lines)
-            for line in lines:
-                parts = line.split()
-                if parts:
-                    cls = int(parts[0])
-                    class_counts[cls] = class_counts.get(cls, 0) + 1
 
     print(f"\n📊  Annotation Report:")
     print(f"   Total label files  : {total}")
     print(f"   With detections    : {non_empty}")
     print(f"   Empty (background) : {total - non_empty}")
     print(f"   Total bounding boxes: {total_boxes}")
-    print(f"   Class 0 (ship)     : {class_counts.get(0, 0)}")
-    print(f"   Class 1 (wreck)    : {class_counts.get(1, 0)}")
-    print(f"   Class 2 (sea)      : {class_counts.get(2, 0)}")
+    print(f"   Class 0 (wreck)    : {total_boxes}")
     print(f"   Label directory    : {OUTPUT_LABEL_DIR}")
 
 
 def main():
     OUTPUT_LABEL_DIR.mkdir(parents=True, exist_ok=True)
-    kaggle_images, satellite_images = collect_images()
+    images = collect_images()
 
-    if not kaggle_images and not satellite_images:
+    if not images:
         print("❌  Nessuna immagine trovata! Esegui prima:")
-        print("   python scripts/download_kaggle.py")
         print("   python scripts/download_satellite.py --provider mapbox --api-key YOUR_TOKEN")
         return
 
-    # 1. Annota immagini Kaggle (ship/no-ship già classificate)
-    if kaggle_images:
-        annotate_kaggle_images(kaggle_images)
-
-    # 2. Annota immagini satellitari (richiedono object detection)
-    if satellite_images:
-        print(f"\n🛰️   Annotating {len(satellite_images)} satellite images...")
-        success = try_autodistill_annotation(satellite_images)
-        if not success:
-            success = try_ultralytics_annotation(satellite_images)
+    # Annota immagini satellitari (wreck detection)
+    print(f"\n🛰️   Annotating {len(images)} satellite images for wreck detection...")
+    success = try_autodistill_annotation(images)
+    if not success:
+        success = try_ultralytics_annotation(images)
 
     generate_annotation_report()
-    print("\n💡  PROSSIMO STEP: rivedi un campione di annotazioni con:")
-    print("    - Label Studio: https://labelstud.io/")
-    print("    - CVAT: https://www.cvat.ai/")
+    print("\n💡  PROSSIMO STEP: rivedi le annotazioni con Label Studio o CVAT")
     print("    Poi esegui: python scripts/prepare_dataset.py")
 
 

@@ -23,23 +23,31 @@ from collections import defaultdict
 import cv2
 import numpy as np
 
+# Check if GUI display is available
+HEADLESS = False
+try:
+    test_img = np.zeros((10, 10, 3), dtype=np.uint8)
+    cv2.imshow("_test", test_img)
+    cv2.destroyWindow("_test")
+except cv2.error:
+    HEADLESS = True
+    print("⚠️  No GUI display available — running in headless mode (video-only output)")
+
 # ---------- CONFIG ----------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_MODEL = PROJECT_ROOT / "models" / "best.pt"
-DEFAULT_SOURCE = PROJECT_ROOT / "dataset" / "satellite_raw"
+DEFAULT_SOURCE = PROJECT_ROOT / "dataset" / "satellite_raw_old"
 DEFAULT_OUTPUT_VIDEO = PROJECT_ROOT / "runs" / "demo_output.mp4"
 CONFIDENCE_THRESHOLD = 0.25
-DISPLAY_DELAY = 0.8  # Secondi tra un frame e l'altro (simula latenza satellite)
+DISPLAY_DELAY = 3.0  # Secondi tra un frame e l'altro (simula latenza satellite)
 WINDOW_NAME = "🚢 YOLO at Sea — Real-Time Maritime Surveillance"
 # ----------------------------
 
 # Colori per le classi (BGR)
 CLASS_COLORS = {
-    0: (0, 255, 0),    # ship → verde
-    1: (0, 0, 255),    # wreck → rosso
-    2: (255, 200, 0),  # sea → azzurro
+    0: (0, 0, 255),    # wreck → rosso
 }
-CLASS_NAMES = {0: "Ship", 1: "Wreck", 2: "Sea"}
+CLASS_NAMES = {0: "Wreck"}
 
 
 def create_info_panel(frame_idx: int, total_frames: int, fps: float,
@@ -183,12 +191,16 @@ def run_demo(args):
 
     # Video writer (opzionale)
     video_writer = None
+    repeat = 1
     if args.save_video:
         output_path = Path(args.save_video)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
         # Frame size = image (640) + panel (320)
-        video_writer = cv2.VideoWriter(str(output_path), fourcc, 2.0, (960, 640))
+        # Write each frame multiple times so playback matches the display delay
+        fps_out = 1.0  # 1 FPS → each frame lasts 1s in the video
+        repeat = max(int(args.delay * fps_out), 1)  # repeat frames to fill delay
+        video_writer = cv2.VideoWriter(str(output_path), fourcc, fps_out, (960, 640))
         print(f"📹  Saving video to: {output_path}")
 
     # Cumulative stats
@@ -240,40 +252,46 @@ def run_demo(args):
         # Combine image + panel
         combined = np.hstack([annotated, panel])
 
-        # Display
-        cv2.imshow(WINDOW_NAME, combined)
+        # Display (only if GUI is available)
+        if not HEADLESS:
+            cv2.imshow(WINDOW_NAME, combined)
 
-        # Save to video
+        # Save to video (repeat frame to match display delay)
         if video_writer is not None:
-            video_writer.write(combined)
+            for _ in range(repeat):
+                video_writer.write(combined)
 
         # Console log
         det_str = ", ".join(f"{CLASS_NAMES.get(k, k)}:{v}" for k, v in frame_counts.items()) or "none"
         print(f"  [{idx:3d}/{len(images)}] {img_name:40s} | FPS: {fps:5.1f} | Det: {det_str}")
 
         # Wait / key handling
-        wait_ms = int(args.delay * 1000)
-        while True:
-            key = cv2.waitKey(wait_ms if not paused else 100) & 0xFF
-            if key == ord("q"):
-                print("\n⏹️  Demo stopped by user")
-                if video_writer:
-                    video_writer.release()
-                cv2.destroyAllWindows()
-                return
-            elif key == ord("n"):
-                break
-            elif key == ord("p"):
-                paused = not paused
-                status = "PAUSED" if paused else "RUNNING"
-                print(f"   ⏸️  {status}")
-            elif not paused:
-                break
+        if HEADLESS:
+            time.sleep(args.delay)
+        else:
+            wait_ms = int(args.delay * 1000)
+            while True:
+                key = cv2.waitKey(wait_ms if not paused else 100) & 0xFF
+                if key == ord("q"):
+                    print("\n⏹️  Demo stopped by user")
+                    if video_writer:
+                        video_writer.release()
+                    cv2.destroyAllWindows()
+                    return
+                elif key == ord("n"):
+                    break
+                elif key == ord("p"):
+                    paused = not paused
+                    status = "PAUSED" if paused else "RUNNING"
+                    print(f"   ⏸️  {status}")
+                elif not paused:
+                    break
 
     # Cleanup
     if video_writer:
         video_writer.release()
-    cv2.destroyAllWindows()
+    if not HEADLESS:
+        cv2.destroyAllWindows()
 
     # Final summary
     total_time = time.time() - start_time
@@ -309,6 +327,10 @@ def main():
 
     if args.no_video:
         args.save_video = None
+
+    if HEADLESS and not args.save_video:
+        args.save_video = str(DEFAULT_OUTPUT_VIDEO)
+        print("ℹ️  Headless mode: enabling video output automatically")
 
     run_demo(args)
 

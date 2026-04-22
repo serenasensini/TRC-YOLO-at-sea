@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Step 5 — Training YOLOv11 per Ship & Wreck Detection
+Step 5 — Training YOLOv11 per Wreck Detection
 Fine-tuning di YOLO11 sul dataset preparato.
+Classe unica: 0=wreck
 
-Usa il modello pre-trainato yolo11m.pt (medium) per un buon compromesso
-tra velocità e accuratezza.
+Usa il modello pre-trainato yolo11n.pt (nano) — più adatto a dataset piccoli.
 """
 
 import argparse
@@ -17,11 +17,11 @@ OUTPUT_DIR = PROJECT_ROOT / "runs"
 MODELS_DIR = PROJECT_ROOT / "models"
 
 # Training hyperparameters (tuned for small & imbalanced satellite dataset)
-DEFAULT_MODEL = "yolo11m.pt"
-DEFAULT_EPOCHS = 150        # Più epoche per dataset piccolo
-DEFAULT_BATCH = 8           # Batch ridotto per dataset piccolo (~300 img)
+DEFAULT_MODEL = "yolo11s.pt"
+DEFAULT_EPOCHS = 200        # Più epoche: convergenza lenta con dataset piccolo + freeze
+DEFAULT_BATCH = 8           # Batch ridotto per dataset piccolo
 DEFAULT_IMGSZ = 640
-DEFAULT_PATIENCE = 30       # Più pazienza: convergenza lenta con pochi dati
+DEFAULT_PATIENCE = 40       # Più pazienza: con freeze+lr basso la convergenza è graduale
 DEFAULT_DEVICE = "0"        # GPU 0. Usa "cpu" se non hai GPU
 # ----------------------------
 
@@ -32,7 +32,7 @@ def train(args):
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
     print("=" * 60)
-    print("🚢  YOLO at Sea — Training YOLOv11")
+    print("🚢  YOLO at Sea — Training YOLOv11 (Wreck Detection)")
     print("=" * 60)
     print(f"   Model      : {args.model}")
     print(f"   Dataset    : {args.data}")
@@ -57,34 +57,38 @@ def train(args):
         project=str(OUTPUT_DIR),
         name="yolo_at_sea",
         exist_ok=True,
-        # Augmentation parameters ottimizzati per satellite imagery (dataset piccolo)
+        # SINGLE CLASS — fondamentale per detection a classe unica
+        single_cls=True,
+        # Freeze backbone (primi 10 layer) per evitare overfitting su dataset piccolo
+        freeze=10,
+        # Augmentation — aggressive per compensare dataset piccolo
         mosaic=1.0,
-        mixup=0.15,           # Leggermente più alto per aumentare variabilità
-        copy_paste=0.15,      # Più copy-paste per compensare pochi esempi
-        degrees=45.0,         # Rotazione ampia (satellite = vista dall'alto, rotazione-invariante)
-        translate=0.15,
-        scale=0.5,
-        flipud=0.5,           # Flip verticale (utile per satellite)
-        fliplr=0.5,           # Flip orizzontale
-        hsv_h=0.015,
-        hsv_s=0.6,            # Più variazione saturazione per condizioni meteo
-        hsv_v=0.4,            # Più variazione luminosità
-        erasing=0.1,          # Random erasing per robustezza
-        # Learning rate (più basso per dataset piccolo, evita overfitting)
+        mixup=0.15,
+        copy_paste=0.15,
+        degrees=20.0,         # Rotazione più ampia (wreck possono avere qualsiasi angolo)
+        translate=0.2,
+        scale=0.5,            # Scale più ampio per variabilità dimensioni
+        flipud=0.5,
+        fliplr=0.5,
+        hsv_h=0.02,
+        hsv_s=0.4,
+        hsv_v=0.3,
+        erasing=0.2,
+        # Learning rate — più basso per fine-tuning stabile
         lr0=0.0005,
         lrf=0.01,
-        warmup_epochs=5,      # Warmup più lungo per stabilizzare
+        warmup_epochs=10,     # Warmup più lungo per stabilizzare con freeze
         # Optimizer
         optimizer="AdamW",
-        weight_decay=0.001,   # Più weight decay per regolarizzazione
-        # Loss weights (boost classification loss per dataset sbilanciato)
-        cls=1.5,              # Aumenta peso class loss
+        weight_decay=0.0005,
         # Save
         save=True,
         save_period=10,
         plots=True,
-        # Regolarizzazione extra
-        dropout=0.1,          # Dropout per ridurre overfitting
+        # Regolarizzazione
+        dropout=0.15,
+        # Close mosaic più tardi per sfruttare augmentation più a lungo
+        close_mosaic=20,
     )
 
     # Copy best weights
@@ -113,7 +117,7 @@ def train(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Train YOLOv11 for Ship & Wreck Detection")
+    parser = argparse.ArgumentParser(description="Train YOLOv11 for Wreck Detection")
     parser.add_argument("--model", type=str, default=DEFAULT_MODEL, help="Pre-trained model to fine-tune")
     parser.add_argument("--data", type=str, default=str(DATASET_YAML), help="Path to dataset.yaml")
     parser.add_argument("--epochs", type=int, default=DEFAULT_EPOCHS, help="Number of training epochs")

@@ -1,15 +1,13 @@
 # YOLO at Sea — Dataset configuration for Ultralytics YOLOv11
-# Paths are relative to this file's parent directory
+# Single-class wreck detection from satellite imagery
 path: ../dataset
 train: images/train
 val: images/val
 
 # Classes
 names:
-  0: Ship
-  1: Wreck
-  2: Sea
+  0: Wreck
 
 # Number of classes
-nc: 3
+nc: 1
 
